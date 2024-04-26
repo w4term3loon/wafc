@@ -1,26 +1,27 @@
 program HelloWorld(output);
 
 const
-    TileLen = 9;
-    TileStride = 3;
-    TableLen = TileLen;
-    TableStride = TileStride;
+    PatternLen = 9;
+    PatternStride = 3;
 
 type
-    TileIndex = 1..TileLen;
-    Tile = array[TileIndex] of Byte;
-    TableIndex = 1..TableLen;
-    Table = array[TableIndex] of Tile;
+    PatternIndex = 1..PatternLen;
+    Pattern = array[PatternIndex] of Byte;
+    TilePtr = ^Tile;
+    Tile = record
+        MPattern: Pattern;
+        MRotation: Byte;
+    end;
 
 var
-    Clear:  Tile = (0,0,0,0,0,0,0,0,0);
-    Dot:    Tile = (0,0,0,0,1,0,0,0,0);
-    Tee:    Tile = (0,0,0,1,1,1,0,1,0);
-    Plus:   Tile = (0,1,0,1,1,1,0,1,0);
-    Stick:  Tile = (0,1,0,0,1,0,0,1,0);
-    Corner: Tile = (0,1,0,0,1,1,0,0,0);
+    Clear:  Pattern = (0,0,0,0,0,0,0,0,0);
+    Dot:    Pattern = (0,0,0,0,1,0,0,0,0);
+    Tee:    Pattern = (0,0,0,1,1,1,0,1,0);
+    Plus:   Pattern = (0,1,0,1,1,1,0,1,0);
+    Stick:  Pattern = (0,1,0,0,1,0,0,1,0);
+    Corner: Pattern = (0,1,0,0,1,1,0,0,0);
 
-    MyTable: Table;
+    MyTile: Tile;
 
 function ByteToParticle(Value: Byte): Char;
 begin
@@ -30,14 +31,20 @@ begin
     end;
 end;
 
+procedure RotateTile(MyTile: Tile);
+begin
+end;
+
 procedure PrintTile(MyTile: Tile);
 var
     I: Longint;
+    MyPattern: Pattern;
 begin
-    for I:=Low(TileIndex) to High(TileIndex) do
+    MyPattern := MyTile.MPattern;
+    for I:=Low(MyPattern) to High(MyPattern) do
     begin
-        Write(ByteToParticle(MyTile[I]));
-        if I mod TileStride = 0 then
+        Write(ByteToParticle(MyPattern[I]));
+        if I mod PatternStride = 0 then
         begin
             Write(#10);
         end;
@@ -45,15 +52,11 @@ begin
 end;
 
 begin
-    PrintTile(Clear);
-    WriteLn();
-    PrintTile(Dot);
-    WriteLn();
-    PrintTile(Tee);
-    WriteLn();
-    PrintTile(Plus);
-    WriteLn();
-    PrintTile(Stick);
-    WriteLn();
-    PrintTile(Corner);
+    with MyTile do
+    begin
+        MPattern := Corner;
+        MRotation := 0;
+    end;
+
+    PrintTile(MyTile);
 end.
