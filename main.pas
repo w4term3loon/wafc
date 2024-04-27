@@ -1,47 +1,46 @@
 program HelloWorld(output);
 
 const
-    PatternLen    = 8;
-    PatternStride = 3;
-    Particle      = #46;
-    Background    = #35;
-    GridLen       = 8;
-    OptionsLen    = 5;
+    Particle    = #46;
+    Background  = #35;
+
+    SPattern    = 3;
+    LPattern    = SPattern * SPattern;
+
+    SGrid       = 9;
+    LGrid       = SGrid * SGrid;
+
+    LOptions    = 6;
 
 type
-    PatternIndex = 0..PatternLen;
-    Pattern = array[PatternIndex] of Byte;
+    IPattern = 1..LPattern;
+    TPattern = array[IPattern] of Byte;
+    HPattern = ^TPattern;
 
-    PatternHandle = ^Pattern;
-
-    Tile = record
-        MPattern: PatternHandle;
+    TTile = record
+        MPattern: HPattern;
         MRotation: Byte;
-        PosX, PosY: Byte;
     end;
 
-    TileHandle = ^Tile;
+    IGrid = 1..LGrid;
+    TGrid = array[IGrid] of TTile;
+    HGrid = ^TGrid;
 
-    GridIndex = 0..GridLen;
-    Grid = record
-        MList: array[GridIndex] of Tile;
-        MCheckpoint: Byte;
-    end;
-
-    OptionsIndex = 0..OptionsLen;
+    IOptions = 1..LOptions;
 
 var
-    Clear:  Pattern = (0,0,0,0,0,0,0,0,0);
-    Dot:    Pattern = (0,0,0,0,1,0,0,0,0);
-    Tee:    Pattern = (0,0,0,1,1,1,0,1,0);
-    Plus:   Pattern = (0,1,0,1,1,1,0,1,0);
-    Stick:  Pattern = (0,1,0,0,1,0,0,1,0);
-    Corner: Pattern = (0,1,0,0,1,1,0,0,0);
+    Clear:  TPattern = (0,0,0,0,0,0,0,0,0);
+    Dot:    TPattern = (0,0,0,0,1,0,0,0,0);
+    Tee:    TPattern = (0,0,0,1,1,1,0,1,0);
+    Plus:   TPattern = (0,1,0,1,1,1,0,1,0);
+    Stick:  TPattern = (0,1,0,0,1,0,0,1,0);
+    Corner: TPattern = (0,1,0,0,1,1,0,0,0);
 
-    Options: array[OptionsIndex] of PatternHandle =
+    Options: array[IOptions] of HPattern =
         (@Clear, @Dot, @Tee, @Plus, @Stick, @Corner);
 
-    MyTile: Tile;
+    MyGrid: TGrid;
+    IMyGrid: Longint;
 
 function ByteToParticle(Value: Byte): Char;
 begin
@@ -51,38 +50,47 @@ begin
     end;
 end;
 
-function RandomPattern(): PatternHandle;
+function RandomPattern(): HPattern;
 begin
-    RandomPattern := Options[Random(High(Options))];
+    RandomPattern := Options[Random(High(Options) - 1) + 1];
 end;
 
-procedure PossibleNeighbours(RetTile: TileHandle; MyTile: Tile);
-begin
-end;
-
-procedure PrintTile(MyTile: Tile);
+procedure PrintGrid(GridHandle: HGrid);
 var
-    I: Longint;
-    MyPattern: PatternHandle;
+    R,RP,C,CP: Longint;
 begin
-    MyPattern := MyTile.MPattern;
-    for I:=Low(MyPattern^) to High(MyPattern^) do
+    C:=Low(GridHandle^);
+    for R:=Low(GridHandle^) to Round(High(GridHandle^)/SGrid) do
     begin
-        Write(output, ByteToParticle(MyPattern^[I]));
-        if I mod PatternStride = 2 then
+        for RP:=Low(GridHandle^[R*C].MPattern^) to
+            Round(High(GridHandle^[R*C].MPattern^)/SPattern) do
         begin
+            for C:=Low(GridHandle^) to SGrid do
+            begin
+                for CP:=Low(GridHandle^[R*C].MPattern^) to SPattern do
+                begin
+                    Write(output,
+                        ByteToParticle(
+                        GridHandle^[R*C].MPattern^[RP*CP]));
+                end;
+            end;
             Write(output, #13#10);
         end;
     end;
 end;
 
+
 begin
     Randomize;
-    with MyTile do
+
+    for IMyGrid:=Low(MyGrid) to High(MyGrid) do
     begin
-        MPattern := RandomPattern();
-        MRotation := 0;
+        with MyGrid[IMyGrid] do
+        begin
+            MPattern:=@Plus;
+            MRotation:=0;
+        end;
     end;
 
-    PrintTile(MyTile);
+    PrintGrid(@MyGrid);
 end.
