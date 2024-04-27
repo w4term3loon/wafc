@@ -8,7 +8,7 @@ const
     LPattern    = SPattern * SPattern;
 
     SGrid       = 9;
-    LGrid       = SGrid * SGrid;
+    LGrid       = SGrid * 6;
 
     LOptions    = 6;
 
@@ -71,7 +71,8 @@ begin
                 begin
                     Write(output,
                         ByteToParticle(
-                        GridHandle^[R*C].MPattern^[RP*CP]));
+                        GridHandle^[(R-1)*SGrid+C]
+                        .MPattern^[(RP-1)*SPattern+CP]));
                 end;
             end;
             Write(output, #13#10);
@@ -87,7 +88,7 @@ begin
     begin
         with MyGrid[IMyGrid] do
         begin
-            MPattern:=@Plus;
+            MPattern:=RandomPattern();
             MRotation:=0;
         end;
     end;
