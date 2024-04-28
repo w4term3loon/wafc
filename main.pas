@@ -1,4 +1,4 @@
-program HelloWorld(output);
+program wafc(output);
 
 const
     Particle    = #46;
@@ -28,7 +28,7 @@ type
     State = (Instable, Stable);
     TTile = record
         MPattern: HPattern;
-        MRotation: Byte;
+        MRotation: Rotation;
         case MState: State of
           Instable: (MOptions: array[IOptions] of TOption);
           Stable: ();
@@ -66,9 +66,26 @@ begin
     RandomPattern := Patterns[Random(High(Patterns) - 1) + 1];
 end;
 
-function RandomRotation(): Byte;
+function RandomRotation(): Rotation;
 begin
-    RandomRotation:=0;
+    RandomRotation:=Right;
+end;
+
+function Rotate(PIndex: Byte; PRotation: Rotation): Byte;
+begin
+    case PRotation of
+      No: Rotate:=PIndex;
+      Right:
+        case PIndex of
+            1..3: Rotate := SPattern * (SPattern - PIndex) + 1;
+            4: Rotate := PIndex + SPattern + 1;
+            5: Rotate := PIndex;
+            6: Rotate := PIndex - SPattern - 1;
+            7..9: Rotate := (PIndex - 2 * SPattern) * SPattern;
+        end;
+      Upside: Rotate:=PIndex;
+      Left: Rotate:=PIndex;
+    end;
 end;
 
 procedure PrintGrid(GridHandle: HGrid);
@@ -88,7 +105,8 @@ begin
                     Write(output,
                         ByteToParticle(
                         GridHandle^[(R-1)*SGrid+C]
-                        .MPattern^[(RP-1)*SPattern+CP]));
+                        .MPattern^[Rotate((RP-1)*SPattern+CP,
+                            GridHandle^[(R-1)*SGrid+C].MRotation)]));
                 end;
             end;
             Write(output, #13#10);
@@ -107,19 +125,21 @@ begin
         begin
             if IMyGrid = 1 then
             begin
-                MPattern:=RandomPattern();
-                MRotation:=RandomRotation();
+                MPattern:=@Corner;
+                MRotation:=Right;
                 MState:=Stable;
             end
             else
+            begin
                 MPattern:=@Clear;
-                MRotation := 0;
+                MRotation := No;
                 MState:=Instable;
                 for IMyOptions:=Low(MOptions) to High(MOptions) do
                 begin
                     MOptions[IMyOptions].MPattern := Patterns[IMyOptions];
                     MOptions[IMyOptions].MRotation := [No, Right, Upside, Left];
                 end;
+            end;
         end;
     end;
 
