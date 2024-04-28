@@ -7,7 +7,7 @@ const
     SPattern    = 3;
     LPattern    = SPattern * SPattern;
 
-    SGrid       = 9;
+    SGrid       = SPattern * 5;
     LGrid       = SGrid * 6;
 
     LOptions    = 6;
@@ -17,16 +17,26 @@ type
     TPattern = array[IPattern] of Byte;
     HPattern = ^TPattern;
 
+    Rotation = (No, Right, Upside, Left);
+    TOption = record
+        MPattern: HPattern;
+        MRotation: set of Rotation;
+    end;
+
+    IOptions = 1..LOptions;
+
+    State = (Instable, Stable);
     TTile = record
         MPattern: HPattern;
         MRotation: Byte;
+        case MState: State of
+          Instable: (MOptions: array[IOptions] of TOption);
+          Stable: ();
     end;
 
     IGrid = 1..LGrid;
     TGrid = array[IGrid] of TTile;
     HGrid = ^TGrid;
-
-    IOptions = 1..LOptions;
 
 var
     Clear:  TPattern = (0,0,0,0,0,0,0,0,0);
@@ -36,15 +46,16 @@ var
     Stick:  TPattern = (0,1,0,0,1,0,0,1,0);
     Corner: TPattern = (0,1,0,0,1,1,0,0,0);
 
-    Options: array[IOptions] of HPattern =
+    Patterns: array[IOptions] of HPattern =
         (@Clear, @Dot, @Tee, @Plus, @Stick, @Corner);
 
     MyGrid: TGrid;
     IMyGrid: Longint;
+    IMyOptions: Longint;
 
 function ByteToParticle(Value: Byte): Char;
 begin
-    Case Value of
+    case Value of
       0: ByteToParticle := Particle;
       1: ByteToParticle := Background;
     end;
@@ -52,7 +63,12 @@ end;
 
 function RandomPattern(): HPattern;
 begin
-    RandomPattern := Options[Random(High(Options) - 1) + 1];
+    RandomPattern := Patterns[Random(High(Patterns) - 1) + 1];
+end;
+
+function RandomRotation(): Byte;
+begin
+    RandomRotation:=0;
 end;
 
 procedure PrintGrid(GridHandle: HGrid);
@@ -84,12 +100,26 @@ end;
 begin
     Randomize;
 
+    (* set the grid all clear *)
     for IMyGrid:=Low(MyGrid) to High(MyGrid) do
     begin
         with MyGrid[IMyGrid] do
         begin
-            MPattern:=RandomPattern();
-            MRotation:=0;
+            if IMyGrid = 1 then
+            begin
+                MPattern:=RandomPattern();
+                MRotation:=RandomRotation();
+                MState:=Stable;
+            end
+            else
+                MPattern:=@Clear;
+                MRotation := 0;
+                MState:=Instable;
+                for IMyOptions:=Low(MOptions) to High(MOptions) do
+                begin
+                    MOptions[IMyOptions].MPattern := Patterns[IMyOptions];
+                    MOptions[IMyOptions].MRotation := [No, Right, Upside, Left];
+                end;
         end;
     end;
 
