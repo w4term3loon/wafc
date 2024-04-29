@@ -7,8 +7,8 @@ const
     SPattern=3; (* don't change *)
     LPattern=SPattern*SPattern;
 
-    SGrid=SPattern*5;
-    LGrid=SGrid*6;
+    SGrid=SPattern*2;
+    LGrid=SGrid*2;
 
     LPatterns=6;
 
@@ -59,6 +59,7 @@ var
     IMyGrid: Longint;
     IMyOptions: Longint;
     ILastTile: Longint;
+    UserInput: Char;
 
 function ByteToParticle(Value: Byte): Char;
 begin
@@ -319,7 +320,7 @@ begin
     end;
 end;
 
-procedure Collapse(GridHandle: HGrid);
+function Collapse(GridHandle: HGrid): Longint;
 var
     Min, Temp: Integer;
     IOption: TOption;
@@ -355,6 +356,7 @@ begin
         begin
             with GridHandle^[Temp] do
             begin
+                Collapse:=Temp;
                 Collapsed:=RandomOption(@MOptions);
                 MPattern:=Collapsed.MPattern;
                 MRotation:=Collapsed.MRotation;
@@ -427,9 +429,22 @@ begin
             end;
         end;
     end;
+    //PrintDebug(@MyGrid, SGrid+1);
     ILastTile:=SGrid+2;
     UpdateGrid(@MyGrid, ILastTile);
-    PrintDebug(@MyGrid, SGrid+1);
-    Collapse(@MyGrid);
     PrintGrid(@MyGrid);
+
+    while true do
+    begin
+        readln(UserInput);
+        if UserInput='n' then
+        begin
+            UpdateGrid(@MyGrid, Collapse(@MyGrid));
+            PrintGrid(@MyGrid);
+        end
+        else
+        begin
+            break;
+        end;
+    end;
 end.
