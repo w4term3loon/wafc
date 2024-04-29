@@ -1,49 +1,56 @@
 program wafc(output);
 
 const
-    Particle    = #46;
-    Background  = #35;
+    Particle=#46;
+    Background=#35;
 
-    SPattern    = 3; (* don't change *)
-    LPattern    = SPattern * SPattern;
+    SPattern=3; (* don't change *)
+    LPattern=SPattern*SPattern;
 
-    SGrid       = SPattern * 5;
-    LGrid       = SGrid * 6;
+    SGrid=SPattern*5;
+    LGrid=SGrid*6;
 
-    LPatterns    = 6;
+    LPatterns=6;
 
 type
-    RPattern = 1..LPattern;
-    TPattern = array[RPattern] of Byte;
-    HPattern = ^TPattern;
+    RPattern=1..LPattern;
+    TPattern=array[RPattern] of Byte;
+    HPattern=^TPattern;
 
-    Rotation = (No, Right, Upside, Left);
-    TOption = record
+    TRotation=(No, Right, Twice, Left);
+    TOption=record
         MPattern: HPattern;
-        MRotation: set of Rotation;
+        MRotation: set of TRotation;
     end;
 
-    RPatterns = 1..LPatterns;
+    RPatterns=1..LPatterns;
 
-    State = (Instable, Stable);
-    TTile = record
+    State=(Instable, Stable);
+    TOptions=array of TOption;
+    HOptions=^TOptions;
+    TTile=record
         MPattern: HPattern;
-        MRotation: Rotation;
+        MRotation: TRotation;
         MState: State;
-        MOptions: array of TOption;
+        MOptions: TOptions;
     end;
 
-    RGrid = 1..LGrid;
-    TGrid = array[RGrid] of TTile;
-    HGrid = ^TGrid;
+    TRandomOption=record
+        MPattern: HPattern;
+        MRotation: TRotation;
+    end;
+
+    RGrid=1..LGrid;
+    TGrid=array[RGrid] of TTile;
+    HGrid=^TGrid;
 
 var
-    Clear:  TPattern = (0,0,0,0,0,0,0,0,0);
-    Dot:    TPattern = (0,0,0,0,1,0,0,0,0);
-    Tee:    TPattern = (0,0,0,1,1,1,0,1,0);
-    Plus:   TPattern = (0,1,0,1,1,1,0,1,0);
-    Stick:  TPattern = (0,1,0,0,1,0,0,1,0);
-    Corner: TPattern = (0,1,0,0,1,1,0,0,0);
+    Clear:  TPattern=(0,0,0,0,0,0,0,0,0);
+    Dot:    TPattern=(0,0,0,0,1,0,0,0,0);
+    Tee:    TPattern=(0,0,0,1,1,1,0,1,0);
+    Plus:   TPattern=(0,1,0,1,1,1,0,1,0);
+    Stick:  TPattern=(0,1,0,0,1,0,0,1,0);
+    Corner: TPattern=(0,1,0,0,1,1,0,0,0);
 
     Patterns: array[RPatterns] of HPattern =
         (@Clear, @Dot, @Tee, @Plus, @Stick, @Corner);
@@ -61,17 +68,50 @@ begin
     end;
 end;
 
+function RandomOption(Options: HOptions): TRandomOption;
+var
+    Target, Count: Longint;
+    IOption: TOption;
+    IRotation: TRotation;
+begin
+    Count:=0;
+    for IOption in Options^ do
+    begin
+        for IRotation in IOption.MRotation do
+        begin
+            Count:=Count+1;
+        end;
+    end;
+    Target:=Random(Count);
+    Count:=0;
+    for IOption in Options^ do
+    begin
+        for IRotation in IOption.MRotation do
+        begin
+            if Count=Target then
+            begin
+                with RandomOption do
+                begin
+                    MPattern:=IOption.MPattern;
+                    MRotation:=IRotation;
+                end;
+            end;
+            Count:=Count+1;
+        end;
+    end;
+end;
+
 function RandomPattern(): HPattern;
 begin
     RandomPattern:=Patterns[Random(High(Patterns) - 1) + 1];
 end;
 
-function RandomRotation(): Rotation;
+function RandomRotation(): TRotation;
 begin
-    RandomRotation:=Rotation(Random(Ord(High(Rotation)) + 1));
+    RandomRotation:=TRotation(Random(Ord(High(TRotation)) + 1));
 end;
 
-function Rotate(PIndex: Byte; PRotation: Rotation): Byte;
+function Rotate(PIndex: Byte; PRotation: TRotation): Byte;
 begin
     case PRotation of
       No: Rotate:=PIndex;
@@ -83,11 +123,11 @@ begin
           6:    Rotate:=PIndex - SPattern - 1;
           7..9: Rotate:=(PIndex - 2 * SPattern) * SPattern;
         end;
-      Upside:
+      Twice:
         case PIndex of
-          1..3: Rotate:=PIndex + 2 * SPattern;
-          4..6: Rotate:=PIndex;
-          7..9: Rotate:=PIndex - 2 * SPattern;
+          1..4: Rotate:=LPattern-(PIndex-1);
+          5:    Rotate:=PIndex;
+          6..9: Rotate:=LPattern-(PIndex-1);
         end;
       Left:
         case PIndex of
@@ -126,15 +166,19 @@ begin
     end;
 end;
 
+(*TODO:generalize*)
 procedure UpdateGrid(GridHandle: HGrid; Target: Longint);
 var
     Left, Right, Up, Down, IParticle, IOption : Longint;
-    Rot: Rotation;
+    DeleteCount: Integer;
+    Rot: TRotation;
 begin
     Left:=Target-1;
     Right:=Target+1;
     Up:=Target-SGrid;
     Down:=Target+SGrid;
+
+    DeleteCount:=0;
     if Left in [Low(GridHandle^)..High(GridHandle^)] then
     begin
       with GridHandle^[Left] do
@@ -143,22 +187,23 @@ begin
         begin
           for IOption:=Low(MOptions) to High(MOptions) do
           begin
-            with MOptions[IOption] do
+            with MOptions[IOption-DeleteCount] do
             begin
               for Rot in MRotation do
               begin
                 for IParticle:=Low(MPattern^) to Round(High(MPattern^)/SPattern) do
                 begin
                   if MPattern^[Rotate(IParticle*SPattern, Rot)] <>
-                    GridHandle^[Target].MPattern^[
-                      Rotate((IParticle-1)*SPattern+1,
+                    GridHandle^[Target].MPattern^[Rotate((IParticle-1)*SPattern+1,
                         GridHandle^[Target].MRotation)] then
                   begin
                     MRotation:=MRotation-[Rot];
-                    if MRotation = [] then
+                    if MRotation=[] then
                     begin
-                      Delete(MOptions, IOption-1, 1);
+                      Delete(MOptions, IOption-DeleteCount, 1);
+                      DeleteCount:=DeleteCount+1;
                     end;
+                    break;
                   end;
                 end;
               end;
@@ -167,71 +212,164 @@ begin
         end;
       end;
     end;
+
+    DeleteCount:=0;
     if Right in [Low(GridHandle^)..High(GridHandle^)] then
     begin
-        with GridHandle^[Right] do
+      with GridHandle^[Right] do
+      begin
+        if MState <> Stable then
         begin
-            if MState <> Stable then
+          for IOption:=Low(MOptions) to High(MOptions) do
+          begin
+            with MOptions[IOption-DeleteCount] do
             begin
-                for IParticle:=1 to Round(High(GridHandle^)/SGrid) do
+              for Rot in MRotation do
+              begin
+                for IParticle:=Low(MPattern^) to Round(High(MPattern^)/SPattern) do
                 begin
-                    for IOption:=Low(MOptions) to High(MOptions) do
+                  if MPattern^[Rotate((IParticle-1)*SPattern+1, Rot)] <>
+                    GridHandle^[Target].MPattern^[
+                      Rotate(IParticle*SPattern, GridHandle^[Target].MRotation)] then
+                  begin
+                    MRotation:=MRotation-[Rot];
+                    if MRotation=[] then
                     begin
-                        (*if MOptions[IOption].MPattern^[(IParticle-1)*SPattern+1]
-                            <> HGrid^[Target].MPattern^[IParticle*SPattern] then
-                                MOptions:=MOptions-[IOption];*)
+                      Delete(MOptions, IOption-DeleteCount, 1);
+                      DeleteCount:=DeleteCount+1;
                     end;
+                    break;
+                  end;
                 end;
+              end;
             end;
+          end;
         end;
+      end;
     end;
+
+    DeleteCount:=0;
     if Up in [Low(GridHandle^)..High(GridHandle^)] then
     begin
-        with GridHandle^[Up] do
+      with GridHandle^[Up] do
+      begin
+        if MState <> Stable then
         begin
-            if MState <> Stable then
+          for IOption:=Low(MOptions) to High(MOptions) do
+          begin
+            with MOptions[IOption-DeleteCount] do
             begin
-                for IParticle:=1 to Round(High(GridHandle^)/SGrid) do
+              for Rot in MRotation do
+              begin
+                for IParticle:=Low(MPattern^) to Round(High(MPattern^)/SPattern) do
                 begin
-                    for IOption:=Low(MOptions) to High(MOptions) do
+                  if MPattern^[Rotate(2*SPattern+IParticle, Rot)] <>
+                    GridHandle^[Target].MPattern^[
+                      Rotate(IParticle, GridHandle^[Target].MRotation)] then
+                  begin
+                    MRotation:=MRotation-[Rot];
+                    if MRotation=[] then
                     begin
-                        (*if MOptions[IOption].MPattern^[SPattern*2+IParticle] <>
-                            HGrid^[Target].MPattern^[IParticle] then
-                                MOptions:=MOptions-[IOption];*)
+                      Delete(MOptions, IOption-DeleteCount, 1);
+                      DeleteCount:=DeleteCount+1;
                     end;
+                    break;
+                  end;
                 end;
+              end;
             end;
+          end;
         end;
+      end;
     end;
+
+    DeleteCount:=0;
     if Down in [Low(GridHandle^)..High(GridHandle^)] then
     begin
-        with GridHandle^[Down] do
+      with GridHandle^[Down] do
+      begin
+        if MState <> Stable then
         begin
-            if MState <> Stable then
+          for IOption:=Low(MOptions) to High(MOptions) do
+          begin
+            with MOptions[IOption-DeleteCount] do
             begin
-                for IParticle:=1 to Round(High(GridHandle^)/SGrid) do
+              for Rot in MRotation do
+              begin
+                for IParticle:=Low(MPattern^) to Round(High(MPattern^)/SPattern) do
                 begin
-                    for IOption:=Low(MOptions) to High(MOptions) do
+                  if MPattern^[Rotate(IParticle, Rot)] <>
+                    GridHandle^[Target].MPattern^[
+                      Rotate(2*SPattern+IParticle, GridHandle^[Target].MRotation)] then
+                  begin
+                    MRotation:=MRotation-[Rot];
+                    if MRotation=[] then
                     begin
-                        (*if MOptions[IOption].MPattern^[IParticle] <>
-                            HGrid^[Target].MPattern^[SPattern*2+IParticle] then
-                                MOptions:=MOptions-[IOption];*)
+                      Delete(MOptions, IOption-DeleteCount, 1);
+                      DeleteCount:=DeleteCount+1;
                     end;
+                    break;
+                  end;
                 end;
+              end;
             end;
+          end;
         end;
+      end;
     end;
 end;
 
 procedure Collapse(GridHandle: HGrid);
+var
+    Min, Temp: Integer;
+    IOption: TOption;
+    IRotation: TRotation;
+    Entropy: array[RGrid] of Integer;
+    Collapsed: TRandomOption;
 begin
+    Min:=High(RPatterns)*Succ(Ord(High(TRotation)));
+    for Temp in RGrid do Entropy[Temp]:=0;
+    for Temp in RGrid do
+    begin
+        with GridHandle^[Temp] do
+        begin
+            if MState <> Stable then
+            begin
+                for IOption in MOptions do
+                begin
+                    for IRotation in IOption.MRotation do
+                    begin
+                        Entropy[Temp]:=Entropy[Temp]+1;
+                    end;
+                end;
+                if Entropy[Temp] < Min then Min:=Entropy[Temp];
+            end;
+        end;
+    end;
 
+    (* choose the first occurance*)
+    (*TODO: don't*)
+    for Temp in RGrid do
+    begin
+        if Entropy[Temp]=Min then
+        begin
+            with GridHandle^[Temp] do
+            begin
+                Collapsed:=RandomOption(@MOptions);
+                MPattern:=Collapsed.MPattern;
+                MRotation:=Collapsed.MRotation;
+                MState:=Stable;
+                MOptions:=MOptions;
+            end;
+            break;
+        end;
+    end;
 end;
 
 procedure PrintDebug(GridHandle: HGrid; Target: Longint);
 var
     I, IT: Longint;
-    R: Rotation;
+    R: TRotation;
 begin
     with GridHandle^[Target] do
     begin
@@ -265,7 +403,7 @@ begin
     begin
         with MyGrid[IMyGrid] do
         begin
-            if IMyGrid = SGrid+2 then
+            if IMyGrid=SGrid+2 then
             begin
                 MPattern:=RandomPattern();
                 MRotation:=RandomRotation();
@@ -283,7 +421,7 @@ begin
                     with MOptions[IMyOptions] do
                     begin
                         MPattern:=Patterns[IMyOptions+1];
-                        MRotation:=[No, Right, Upside, Left];
+                        MRotation:=[No, Right, Twice, Left];
                     end;
                 end;
             end;
@@ -292,5 +430,6 @@ begin
     ILastTile:=SGrid+2;
     UpdateGrid(@MyGrid, ILastTile);
     PrintDebug(@MyGrid, SGrid+1);
+    Collapse(@MyGrid);
     PrintGrid(@MyGrid);
 end.
