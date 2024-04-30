@@ -7,8 +7,8 @@ const
     SPattern=3; (* don't change *)
     LPattern=SPattern*SPattern;
 
-    SGrid=SPattern*2;
-    LGrid=SGrid*2;
+    SGrid=10;
+    LGrid=SGrid*5;
 
     LPatterns=6;
 
