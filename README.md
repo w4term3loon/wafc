@@ -2,5 +2,8 @@
 This is a wave function collapse implementation.
 
 ### Build
-$ make
+
+```sh
+make
+```
 
