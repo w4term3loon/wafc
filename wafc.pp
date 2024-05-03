@@ -4,11 +4,14 @@
   TODO:= write patterns next to each other in list
 *)
 
-Program ReadConfig(Output);
+Unit Wafc;
+
+Interface
 
 Const AsciiDelta=48;
 Background=#46;
 Pipe=#35;
+SPatterns=3;
 
 Type HPattern=^TPattern;
 TPattern=Array Of Byte;
@@ -41,10 +44,28 @@ TGrid=Record
   MOrderA:Array Of Byte;
 End;
 
-Var SPatterns: Byte;
-Patterns:HPatternA;
-Grid:HGrid;
-Collapsed:Longint;
+Procedure ReadConfig(Path:String; Patterns:HPatternA);
+Procedure WriteParticle(Particle:Byte);
+Function GetStride(Patterns:TPatternA):Byte;
+Procedure WritePatterns(Patterns:TPatternA);
+Function RandomPattern(Patterns:TPatternA):HPattern;
+Function RandomRotation():TRotation;
+Function InitGrid(Grid:HGrid; Patterns:TPatternA; Stride:Byte; Row:Byte):Longint;
+Function Rotate(LPattern:Byte; PIndex:Byte; PRotation:TRotation):Byte;
+Procedure WriteGrid(Grid:TGrid);
+(*Procedure UpdateEntropy(Grid:HGrid; Target:Longint);*)
+
+Implementation
+
+Function RandomPattern(Patterns:TPatternA):HPattern;
+Begin
+    RandomPattern:=Patterns[Random(High(Patterns))];
+End;
+
+Function RandomRotation():TRotation;
+Begin
+    RandomRotation:=TRotation(Random(Ord(High(TRotation))+1));
+End;
 
 Procedure ReadConfig(Path:String; Patterns:HPatternA);
 Var Config:Text;
@@ -122,16 +143,6 @@ Begin
     End;
     Write(Output, #10);
   End;
-End;
-
-Function RandomPattern(Patterns:TPatternA):HPattern;
-Begin
-    RandomPattern:=Patterns[Random(High(Patterns))];
-End;
-
-Function RandomRotation():TRotation;
-Begin
-    RandomRotation:=TRotation(Random(Ord(High(TRotation))+1));
 End;
 
 Function InitGrid(Grid:HGrid; Patterns:TPatternA;
@@ -239,7 +250,7 @@ Begin
   End;
 End;
 
-Procedure UpdateEntropy(Grid:HGrid; Target:Longint);
+(*Procedure UpdateEntropy(Grid:HGrid; Target:Longint);
 Var OIter, PIter, Left:Longint;
 DeleteCount:Integer;
 Rot:TRotation;
@@ -247,9 +258,9 @@ Begin
   Left:=Target-1;
   DeleteCount:=0;
   If Left In [Low(Grid^.MTileA)..High(Grid^.MTileA)] Then
-  begin
+  Begin
     If Grid^.MTileA[Left].MState <> Stable Then
-    begin
+    Begin
       For OIter:=Low(Grid^.MTileA[Left].MOptionAH^)
       To High(Grid^.MTileA[Left].MOptionAH^) Do
       Begin
@@ -279,61 +290,6 @@ Begin
       End;
     End;
   End;
-End;
-
-(*Procedure UpdateGrid(Grid:HGrid; Target:Longint);
-Var Left, Right, Up, Down, IParticle, IOption : Longint;
-DeleteCount: Integer;
-Rot: TRotation;
-Begin
-  Left:=Target-1;
-  Right:=Target+1;
-  Up:=Target-SGrid;
-  Down:=Target+SGrid;
-
-  DeleteCount:=0;
-  If Left In [Low(GridHandle^)..High(GridHandle^)] Then
-  begin
-    With GridHandle^[Left] Do
-    Begin
-      If MState <> Stable Then
-      begin
-        For IOption:=Low(MOptions) To High(MOptions) Do
-        Begin
-          With MOptions[IOption-DeleteCount] Do
-          Begin
-            For Rot In MRotation Do
-            Begin
-              For IParticle:=Low(MPattern^) To Round(High(MPattern^)/SPattern) Do
-              Begin
-                If MPattern^[Rotate(IParticle*SPattern, Rot)] <>
-                  GridHandle^[Target].MPattern^[Rotate((IParticle-1)*SPattern+1,
-                      GridHandle^[Target].MRotation)] Then
-                Begin
-                  MRotation:=MRotation-[Rot];
-                  If MRotation=[] Then
-                  Begin
-                    Delete(MOptions, IOption-DeleteCount, 1);
-                    DeleteCount:=DeleteCount+1;
-                  End;
-                  Break;
-                End;
-              End;
-            End;
-          End;
-        End;
-      End;
-    End;
-  End;
 End;*)
 
-Begin
-  Randomize;
-  New(Patterns);
-  ReadConfig('patterns', Patterns);
-  SPatterns:=GetStride(Patterns^);
-
-  New(Grid);
-  Collapsed:=InitGrid(Grid, Patterns^, 5, 3);
-  WriteGrid(Grid^);
 End.
