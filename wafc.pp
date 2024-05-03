@@ -197,8 +197,7 @@ Begin
         3:    Rotate:=PIndex+SPatterns+1;
         4:    Rotate:=PIndex;
         5:    Rotate:=PIndex-SPatterns-1;
-        6..8: Rotate:=LPattern-(PIndex mod SPatterns*2)*SPatterns+
-          (PIndex mod SPatterns*2)*(-1);
+        6..8: Rotate:=LPattern-(PIndex-2*SPatterns)-1;
       End;
     Twice:
       Case PIndex Of
