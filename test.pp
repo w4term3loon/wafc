@@ -55,6 +55,14 @@ Begin
   SetLength(Pattern, 9);
   For Iter:=Low(Pattern) To High(Pattern) Do
   Begin Pattern[Iter]:=Iter; End;
+
+  EXPECT(Rotate(Length(Pattern),0,No)=0,
+  'No rotation should return 0 when input 0.');
+  EXPECT(Rotate(Length(Pattern),3,No)=3,
+  'No rotation should return 3 when input 3.');
+  EXPECT(Rotate(Length(Pattern),6,No)=6,
+  'No rotation should return 6 when input 6.');
+
   EXPECT(Rotate(Length(Pattern),0,Right)=6,
   'Right rotation should return 6 when input 0.');
   EXPECT(Rotate(Length(Pattern),3,Right)=7,
@@ -68,6 +76,13 @@ Begin
   'Left rotation should return 1 when input 3.');
   EXPECT(Rotate(Length(Pattern),6,Left)=0,
   'Left rotation should return 0 when input 6.');
+
+  EXPECT(Rotate(Length(Pattern),0,Twice)=8,
+  'Twice rotation should return 8 when input 0.');
+  EXPECT(Rotate(Length(Pattern),3,Twice)=5,
+  'Twice rotation should return 5 when input 3.');
+  EXPECT(Rotate(Length(Pattern),6,Twice)=2,
+  'Twice rotation should return 2 when input 6.');
 End;
 
 Begin
