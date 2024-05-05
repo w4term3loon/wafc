@@ -2,6 +2,7 @@
   TODO:= encaplusate pattern stride in TPattern
   TODO:= backtracting
   TODO:= write patterns next to each other in list
+  TODO:= eliminate collapse from init function
 *)
 
 Unit Wafc;
@@ -53,13 +54,13 @@ Function RandomRotation():TRotation;
 Function InitGrid(Grid:HGrid; Patterns:TPatternA; Stride:Byte; Row:Byte):Longint;
 Function Rotate(LPattern:Byte; PIndex:Byte; PRotation:TRotation):Byte;
 Procedure WriteGrid(Grid:TGrid);
-(*Procedure UpdateEntropy(Grid:HGrid; Target:Longint);*)
+Procedure UpdateEntropy(Grid:HGrid; Target:Longint);
 
 Implementation
 
 Function RandomPattern(Patterns:TPatternA):HPattern;
 Begin
-    RandomPattern:=Patterns[Random(High(Patterns))];
+    RandomPattern:=Patterns[Trunc(Random(High(Patterns)+1))];
 End;
 
 Function RandomRotation():TRotation;
@@ -249,7 +250,7 @@ Begin
   End;
 End;
 
-(*Procedure UpdateEntropy(Grid:HGrid; Target:Longint);
+Procedure UpdateEntropy(Grid:HGrid; Target:Longint);
 Var OIter, PIter, Left:Longint;
 DeleteCount:Integer;
 Rot:TRotation;
@@ -289,6 +290,6 @@ Begin
       End;
     End;
   End;
-End;*)
+End;
 
 End.

@@ -1,14 +1,18 @@
 Program Testies;
 Uses Wafc;
 
+Var Passed, Failed:Byte;
+
 Procedure FAIL(Message:String);
 Begin
+  Failed:=Failed+1;
   Write('[FAIL] ');
   WriteLn(Message);
 End;
 
 Procedure OK(Message:String);
 Begin
+  Passed:=Passed+1;
   Write('[ OK ] ');
   WriteLn(Message);
 End;
@@ -24,6 +28,15 @@ Begin
   If Expression Then
   Begin OK(Message) End
   Else Begin FAIL(Message); End;
+End;
+
+Procedure Summarize();
+Begin
+  WriteLn('Overview:');
+  Write('Passed: ');
+  Write(Passed);
+  Write(' Failed: ');
+  WriteLn(Failed);
 End;
 
 Procedure TestRandomPattern();
@@ -85,8 +98,26 @@ Begin
   'Twice rotation should return 2 when input 6.');
 End;
 
+Procedure TestUpdateEntropy();
+Var Patterns:HPatternA;
+Grid:HGrid;
+Collapsed:Longint;
+Begin
+  SCENARIO('Test entropy update after a collapse.');
+  Randomize;
+  New(Patterns);
+  ReadConfig('testpatterns', Patterns);
+  New(Grid);
+  Collapsed:=InitGrid(Grid, Patterns^, 5, 3);
+  UpdateEntropy(Grid, Collapsed);
+  (* TODO *)
+  WriteGrid(Grid^);
+End;
+
 Begin
   TestRandomPattern();
   TestRandomRotation();
   TestRotate();
+  TestUpdateEntropy();
+  Summarize();
 End.
